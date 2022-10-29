@@ -1,25 +1,46 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+let infoStatusBarItem: vscode.StatusBarItem;
+let infoStatusBarHideTimeout: NodeJS.Timeout | null = null;
+
 export function activate(context: vscode.ExtensionContext) {
-	
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "local-echo-switcher-command" is now active!');
+	infoStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+	infoStatusBarItem.hide();
+	context.subscriptions.push(vscode.commands.registerCommand(
+		'local-echo-switcher-command.toggleLocalEcho', toggleLocalEcho));
+}
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('local-echo-switcher-command.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Local Echo Switcher Command!');
-	});
+async function toggleLocalEcho() {
+	const targetState = !await getLocalEchoState();
+	await setLocalEchoState(targetState);
+	const targetStateStr = targetState ? "enabled" : "disabled";
+	infoStatusBarItem.text = `$(terminal-view-icon) local echo ${targetStateStr}`;
+	resetStatusBarHideTimeout();
+	infoStatusBarItem.show();
+}
 
-	context.subscriptions.push(disposable);
+function resetStatusBarHideTimeout() {
+	if (infoStatusBarHideTimeout) {
+		clearTimeout(infoStatusBarHideTimeout);
+		infoStatusBarHideTimeout = null;
+	}
+	infoStatusBarHideTimeout = setTimeout(() => {
+		infoStatusBarItem.hide();
+		infoStatusBarHideTimeout = null;
+	}, 1250);
+}
+
+function getLocalEchoState(): boolean {
+	const cfg = vscode.workspace.getConfiguration('terminal.integrated');
+	let ret = cfg.localEchoEnabled === 'on';
+	ret &&= cfg.localEchoLatencyThreshold <= 0;
+	return ret;
+}
+
+async function setLocalEchoState(enable: boolean) {
+	const cfg = vscode.workspace.getConfiguration('terminal.integrated');
+	await cfg.update("localEchoEnabled", (enable ? "on" : "off"), vscode.ConfigurationTarget.Global);
+	await cfg.update("localEchoLatencyThreshold", 0, vscode.ConfigurationTarget.Global);
 }
 
 // this method is called when your extension is deactivated

@@ -10,14 +10,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:local-echo-switcher-command.helloWorld"
+    "onCommand:local-echo-switcher-command.toggleLocalEcho"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "local-echo-switcher-command.helloWorld",
-        "title": "Hello World"
+        "command": "local-echo-switcher-command.toggleLocalEcho",
+        "title": "Toggle Terminal Local Echo"
       }
     ]
   },
